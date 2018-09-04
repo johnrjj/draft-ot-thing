@@ -6,6 +6,7 @@
   "scripts": {
     "prepare": "npm run build",
     "build": "tsc",
+    "build:watch": "tsc -w",
     "test": "jest",
     "prettier": "prettier --single-quote --print-width 100 --trailing-comma es5 --write 'src/**/*.ts'"
   },
@@ -27,7 +28,6 @@
     "typescript": "^3.0.3"
   },
   "jest": {
-
     "moduleFileExtensions": [
       "js",
       "ts"

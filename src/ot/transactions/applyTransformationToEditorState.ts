@@ -7,8 +7,10 @@ import {
   ContentState,
   ContentBlock,
   genKey,
+  CharacterMetadata,
 } from 'draft-js';
-import { List } from 'immutable';
+import { List, Repeat } from 'immutable';
+import { removeRangeFromContentState } from './removeRange';
 
 const getSelectionStateForOffset = (contentState: ContentState, offset: number) => {
   let blockOffset = 0;
@@ -32,23 +34,43 @@ const applyTransformationToEditorState = (
   transformation: Transformation,
   editorState: EditorState
 ): EditorState => {
+
+  // transformation.w
   const contentState = editorState.getCurrentContent();
   let offset = 0;
   const operations = transformation.get('operations');
   const newContentState = operations.reduce((memoContentState, operation) => {
     const selectionState = getSelectionStateForOffset(memoContentState, offset);
-    if (!selectionState && operation.get('type') === 'insert') {
+    if (operation && operation.get('type') === 'insert' && operation.get('text') === '\n') {
+      console.log('insert new line, should be here!!!');
       const key = genKey();
       const newBlock = new ContentBlock({
         key,
         type: 'unstyled',
-        text: operation.get('text') || '',
+        text: operation.get('text'),
         characterList: List(),
       });
-      const newBlockMap = memoContentState.getBlockMap().set(key, newBlock);
-      return ContentState.createFromBlockArray(newBlockMap.toArray())
-        .set('selectionBefore', memoContentState.getSelectionBefore())
-        .set('selectionAfter', memoContentState.getSelectionAfter());
+
+      // const newBlock = new ContentBlock({
+      //   key,
+      //   text: operation.get('text'),
+      //   type: 'unstyled',
+      //   characterList: List(Repeat(new CharacterMetadata(), operation.get('text').length)),
+      // });
+
+      // contentState.getPlainText().toLowerCase
+      const newBlockMap = memoContentState.getBlockMap().concat(
+        [[key, newBlock]]
+      ).toOrderedMap();
+
+      return memoContentState.merge({
+        blockMap: newBlockMap,
+      });
+
+      // const newBlockMap = memoContentState.getBlockMap().set(key, newBlock);
+      // return ContentState.createFromBlockArray(newBlockMap.toArray())
+      //   .set('selectionBefore', memoContentState.getSelectionBefore())
+      //   .set('selectionAfter', memoContentState.getSelectionAfter());
       // return EditorState.push(
       //   editorState,
       //   ContentState
@@ -82,6 +104,7 @@ const applyTransformationToEditorState = (
       return memoContentState;
     }
 
+
     const focusOffsetRemoval = selectionState.get('focusOffset') + operation.get('numOfChars');
 
     switch (operation.get('type')) {
@@ -95,10 +118,11 @@ const applyTransformationToEditorState = (
         offset += operation.get('numOfChars');
         break;
       case 'delete':
-        return Modifier.removeRange(
+        // Can't use Modifier.removeRange, weird things with entities happen
+        // look into why??
+        return removeRangeFromContentState(
           memoContentState,
           selectionState.set('focusOffset', focusOffsetRemoval),
-          'backward'
         );
       default:
         return memoContentState;

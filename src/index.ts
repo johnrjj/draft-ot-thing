@@ -1,5 +1,9 @@
-// src/index.ts
+import { generateTextTransformationForEditorState } from "./ot/generators/editorStateTransformationGenerator";
+import { Transformation } from "./ot/immutable/Transformation";
+import { applyTransformationToEditorState } from "./ot/transactions/applyTransformationToEditorState";
 
-export function sum(a: number, b: number) {
-  return a + b;
-}
+export {
+  Transformation,
+  generateTextTransformationForEditorState,
+  applyTransformationToEditorState,
+};
